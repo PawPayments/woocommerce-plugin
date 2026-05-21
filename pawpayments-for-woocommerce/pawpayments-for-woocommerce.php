@@ -22,6 +22,7 @@ define('PAWPAYMENTS_VERSION', '2.0.0');
 define('PAWPAYMENTS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 
 require_once PAWPAYMENTS_PLUGIN_DIR . 'vendor/pawpayments/sdk/src/Exception/PawPaymentsApiException.php';
+require_once PAWPAYMENTS_PLUGIN_DIR . 'vendor/pawpayments/sdk/src/Version.php';
 require_once PAWPAYMENTS_PLUGIN_DIR . 'vendor/pawpayments/sdk/src/PawPaymentsClient.php';
 require_once PAWPAYMENTS_PLUGIN_DIR . 'vendor/pawpayments/sdk/src/Webhook.php';
 
