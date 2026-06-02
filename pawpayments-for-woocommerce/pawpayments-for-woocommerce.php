@@ -3,7 +3,7 @@
  * Plugin Name: PawPayments for WooCommerce
  * Plugin URI: https://pawpayments.com
  * Description: Accept cryptocurrency payments via PawPayments
- * Version: 2.0.0
+ * Version: 2.0.1
  * Author: PawPayments
  * Author URI: https://pawpayments.com
  * License: MIT
@@ -18,7 +18,7 @@
 
 if (!defined('ABSPATH')) exit;
 
-define('PAWPAYMENTS_VERSION', '2.0.0');
+define('PAWPAYMENTS_VERSION', '2.0.1');
 define('PAWPAYMENTS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 
 require_once PAWPAYMENTS_PLUGIN_DIR . 'vendor/pawpayments/sdk/src/Exception/PawPaymentsApiException.php';

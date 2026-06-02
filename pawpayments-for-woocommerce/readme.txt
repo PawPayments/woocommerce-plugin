@@ -6,7 +6,7 @@ Tested up to: 6.7
 Requires PHP: 7.4
 WC requires at least: 7.0
 WC tested up to: 9.0
-Stable tag: 2.0.0
+Stable tag: 2.0.1
 License: MIT
 
 Accept cryptocurrency payments in your WooCommerce store via PawPayments.
@@ -33,6 +33,9 @@ Features:
 Note: This plugin does not support permanent deposit addresses. For topup/wallet functionality, integrate directly with the PawPayments API.
 
 == Changelog ==
+
+= 2.0.1 =
+* Updated bundled PawPayments PHP SDK (full API surface, payout `fee_bearer`)
 
 = 2.0.0 =
 * Complete rewrite for PawPayments API v2
