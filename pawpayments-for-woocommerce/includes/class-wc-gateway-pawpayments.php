@@ -97,7 +97,10 @@ class WC_Gateway_PawPayments extends WC_Payment_Gateway
                 'extra' => (string) $order_id,
                 'amount' => (float) $order->get_total(),
                 'fiat_currency' => $fiatCurrency,
-                'billing_type' => 'VARY',
+                // Fixed-price order: STATIC keeps the invoice open after an underpayment so the
+                // customer can top it up; VARY (right for balance top-ups) finalises on the
+                // first payment, making a shortfall terminal.
+                'billing_type' => 'STATIC',
                 'on_paid_url' => $this->get_return_url($order),
                 'on_cancel_url' => $order->get_cancel_order_url_raw(),
                 'notify_url' => WC()->api_request_url('pawpayments'),

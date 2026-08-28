@@ -3,7 +3,7 @@
  * Plugin Name: PawPayments for WooCommerce
  * Plugin URI: https://pawpayments.com
  * Description: Accept cryptocurrency payments via PawPayments
- * Version: 2.0.1
+ * Version: 2.0.3
  * Author: PawPayments
  * Author URI: https://pawpayments.com
  * License: MIT
