@@ -19,7 +19,7 @@ Features:
 * Easy setup — just add your API key
 * Customer chooses cryptocurrency on the PawPayments paywall
 * Automatic order status updates via webhooks
-* Support for 23 fiat currencies (USD, EUR, GBP, CAD, AUD, CHF, JPY, NZD, SGD, HKD, NGN, KRW, ILS, RON, ARS, INR, IDR, MXN, MYR, TRY, PLN, BRL, THB) — other shop currencies auto-fallback to USD
+* Support for 23 fiat currencies (USD, EUR, GBP, CAD, AUD, CHF, JPY, NZD, SGD, HKD, NGN, KRW, ILS, RON, ARS, INR, IDR, MXN, MYR, TRY, PLN, BRL, THB) — the gateway is hidden for any other shop currency
 * Idempotent webhook processing
 
 == Installation ==

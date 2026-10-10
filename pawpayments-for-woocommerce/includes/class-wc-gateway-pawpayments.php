@@ -73,6 +73,31 @@ class WC_Gateway_PawPayments extends WC_Payment_Gateway
         ];
     }
 
+    /**
+     * Hide the gateway when the currency to be paid cannot be invoiced: the
+     * order's own currency on the order-pay page (it can differ from the one a
+     * currency switcher shows), the store currency at checkout.
+     */
+    public function is_available()
+    {
+        return parent::is_available() && self::supports_currency($this->payable_currency());
+    }
+
+    private function payable_currency(): string
+    {
+        $orderId = function_exists('is_wc_endpoint_url') && is_wc_endpoint_url('order-pay')
+            ? absint(get_query_var('order-pay'))
+            : 0;
+        $order = $orderId ? wc_get_order($orderId) : null;
+
+        return $order ? (string) $order->get_currency() : (string) get_woocommerce_currency();
+    }
+
+    private static function supports_currency(string $currency): bool
+    {
+        return in_array(strtoupper($currency), self::SUPPORTED_FIATS, true);
+    }
+
     public function process_payment($order_id)
     {
         $order = wc_get_order($order_id);
@@ -86,10 +111,16 @@ class WC_Gateway_PawPayments extends WC_Payment_Gateway
 
         $client = new \PawPayments\Sdk\PawPaymentsClient($apiKey, $baseUrl);
 
-        $orderCurrency = strtoupper((string) $order->get_currency());
-        $fiatCurrency = in_array($orderCurrency, self::SUPPORTED_FIATS, true) ? $orderCurrency : 'USD';
-        if ($fiatCurrency !== $orderCurrency) {
-            $this->log('warning', 'Order #' . $order_id . ' currency ' . $orderCurrency . ' is not supported by PawPayments; falling back to USD');
+        // Never re-label the total in another currency: an unsupported currency
+        // cannot be paid through this gateway at all.
+        $fiatCurrency = strtoupper((string) $order->get_currency());
+        if (!self::supports_currency($fiatCurrency)) {
+            $this->log('warning', 'Order #' . $order_id . ' currency ' . $fiatCurrency . ' is not supported by PawPayments');
+            wc_add_notice(
+                sprintf(__('PawPayments does not accept payments in %s. Please choose another payment method.', 'pawpayments'), $fiatCurrency),
+                'error'
+            );
+            return;
         }
 
         try {

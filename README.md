@@ -13,7 +13,10 @@ order is updated automatically once the on-chain payment confirms.
 - HPOS-compatible (High-Performance Order Storage); works on single-site and
   multisite installations.
 - Automatic order status updates: `on-hold` → `processing` / `completed` on
-  payment.
+  payment; `cancelled` on a failed invoice or one that expired unpaid.
+- An invoice that expired after a partial payment leaves the order open with a
+  note: the funds were credited to the merchant and must be applied for the
+  customer by hand (WooCommerce has no customer balance to put them on).
 - Webhooks verified via `X-Paw-Signature` (HMAC-SHA256 of the raw body); requests without a valid header are rejected with HTTP 401.
 - Idempotent: `payment_complete()` is natively idempotent in WooCommerce.
 - Webhooks with `permanent_address_id` are silently acknowledged (200 OK).
@@ -188,3 +191,19 @@ A successful response is `OK` with HTTP 200.
    ```
 
 The plugin does not create any custom database tables.
+
+---
+
+## Tests
+
+`tests/` (not part of the plugin zip) holds a PHPUnit suite that runs without
+WordPress: webhook verification, what a verified webhook does to an order
+(only an order paid with this gateway and its own PawPayments invoice changes;
+money on any other invoice becomes an order note; amount and currency are
+checked before `payment_complete()`), and the gateway's currency rules
+(hidden for a currency PawPayments cannot invoice; never re-labelled as USD).
+
+```bash
+cd tests
+phpunit -c phpunit.xml.dist        # PHPUnit 9; runs on PHP 7.4 and 8.x
+```
