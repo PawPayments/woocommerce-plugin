@@ -17,7 +17,9 @@ class WebhookTest extends TestCase
             $over['method'] ?? 'pawpayments',
             $over['meta'] ?? ['_pawpayments_order_id' => 'po1'],
             $over['currency'] ?? 'USD',
-            $over['total'] ?? '50.00'
+            $over['total'] ?? '50.00',
+            $over['paid'] ?? false,
+            $over['transaction_id'] ?? ''
         );
     }
 
@@ -90,6 +92,26 @@ class WebhookTest extends TestCase
         $this->assertNull($action['cancel']);
         $this->assertSame(['PawPayments: Paid 50 usdt_tron (order po1)'], $action['notes']);
         $this->assertSame([200, 'OK'], [$action['http'], $action['body']]);
+    }
+
+    public function testRepeatOfTheWebhookThatCompletedTheOrderChangesNothing(): void
+    {
+        $paid = $this->order(['paid' => true, 'transaction_id' => 'po1']);
+        $action = $this->decide(['status' => 'success', 'fiat_amount' => 50.0, 'initial_fiat_amount' => 50.0, 'fiat_currency' => 'USD'], $paid);
+
+        $this->assertFalse($action['complete']);
+        $this->assertSame([], $action['notes']);
+        $this->assertSame([200, 'OK'], [$action['http'], $action['body']]);
+    }
+
+    public function testOnlyTheInvoiceThatPaidTheOrderIsTakenForARepeat(): void
+    {
+        // Paid with another transaction (e.g. by hand): the order's current
+        // invoice is still settled as usual; payment_complete() keeps the status.
+        $paid = $this->order(['paid' => true, 'transaction_id' => 'manual-1']);
+        $action = $this->decide(['status' => 'success', 'fiat_amount' => 50.0, 'initial_fiat_amount' => 50.0, 'fiat_currency' => 'USD'], $paid);
+
+        $this->assertTrue($action['complete']);
     }
 
     public function testPaidOverCompletesTheOrder(): void

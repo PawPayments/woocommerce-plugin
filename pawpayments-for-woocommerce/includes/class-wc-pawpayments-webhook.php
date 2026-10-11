@@ -127,6 +127,11 @@ class WC_PawPayments_Webhook
         switch ($status) {
             case 'success':
             case 'paid_over':
+                // A repeat of the webhook that completed the order (a retry, a
+                // resend from the dashboard) changes nothing and adds no note.
+                if ($order->is_paid() && (string) $order->get_transaction_id() === $pawOrderId) {
+                    return ['log' => ['info', "Order #{$orderId} already paid via PawPayments ({$pawOrderId})"]] + $none;
+                }
                 if (!\PawPayments\Sdk\Webhook::coversAmount($payload, (string) $order->get_currency(), $order->get_total())) {
                     return [
                         'notes' => [sprintf(

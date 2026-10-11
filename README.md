@@ -10,6 +10,9 @@ order is updated automatically once the on-chain payment confirms.
 
 - **Checkout only** — no top-up/wallet feature (WooCommerce has no native
   credit balance).
+- Works with both checkouts: the **Checkout block** (the default of new stores
+  since WooCommerce 8.3) and the classic `[woocommerce_checkout]` shortcode
+  page.
 - HPOS-compatible (High-Performance Order Storage); works on single-site and
   multisite installations.
 - Automatic order status updates: `on-hold` → `processing` / `completed` on
@@ -18,7 +21,8 @@ order is updated automatically once the on-chain payment confirms.
   note: the funds were credited to the merchant and must be applied for the
   customer by hand (WooCommerce has no customer balance to put them on).
 - Webhooks verified via `X-Paw-Signature` (HMAC-SHA256 of the raw body); requests without a valid header are rejected with HTTP 401.
-- Idempotent: `payment_complete()` is natively idempotent in WooCommerce.
+- Idempotent: a repeat of the webhook that completed the order changes nothing
+  and adds no second note.
 - Webhooks with `permanent_address_id` are silently acknowledged (200 OK).
 - Currency / network selection happens on the PawPayments paywall — the
   plugin does not need to know about supported assets.
@@ -139,8 +143,9 @@ https://<your-store>/?wc-api=pawpayments
 
 1. Place a test order:
    - Add a product to the cart.
-   - Checkout and select **Pay with Crypto**.
-   - You should be redirected to a `https://paw.now/invoice#…` paywall page.
+   - Checkout and select the PawPayments method (its **Title** setting,
+     *Cryptocurrency* by default).
+   - You should be redirected to a `https://pawpayments.com/checkout/…` paywall page.
 2. In **WooCommerce → Orders**, the order status should be **On hold** with a
    note *Awaiting crypto payment* and a meta `_pawpayments_order_id`.
 3. Complete payment on the paywall using a small amount of any supported
@@ -155,7 +160,9 @@ https://<your-store>/?wc-api=pawpayments
 ORDER_ID="<paw_order_id_from_meta>"
 EXTRA="<wc_order_id>"
 KEY="<your_api_key>"
-BODY="{\"order_id\":\"$ORDER_ID\",\"extra\":\"$EXTRA\",\"status\":\"success\",\"amount\":\"10\",\"asset\":\"USDT\"}"
+# initial_fiat_amount (what the invoice was issued for) and fiat_currency must
+# match the order total and currency
+BODY="{\"order_id\":\"$ORDER_ID\",\"extra\":\"$EXTRA\",\"status\":\"success\",\"fiat_amount\":10,\"initial_fiat_amount\":10,\"fiat_currency\":\"USD\",\"amount\":10.5,\"asset\":\"usdt_tron\"}"
 SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$KEY" | awk '{print $2}')
 curl -X POST "https://<your-store>/?wc-api=pawpayments" \
   -H "Content-Type: application/json" \
@@ -171,7 +178,7 @@ A successful response is `OK` with HTTP 200.
 
 | Symptom | Cause / Fix |
 | ------- | ----------- |
-| Gateway not visible at checkout | Make sure it is enabled in **WooCommerce → Settings → Payments** and that the cart currency is supported by your PawPayments account. |
+| Gateway not visible at checkout | Make sure it is enabled in **WooCommerce → Settings → Payments** and that the store currency is one of the 23 supported ones. With the Checkout block, clear any page cache after updating the plugin (the block loads the method from `assets/js/blocks.js`). |
 | `Payment error: Invalid API key` | Wrong API key in settings, or the merchant account has not been activated yet. |
 | Order stays **On hold** after payment | Webhook not delivered. Check that the store is reachable from the public internet over HTTPS, and that no firewall blocks outbound connections from PawPayments. |
 | Webhook returns HTTP 401 | Signature mismatch. Confirm the **API Key** in the settings matches the one used when the invoice was created. |
@@ -201,7 +208,8 @@ WordPress: webhook verification, what a verified webhook does to an order
 (only an order paid with this gateway and its own PawPayments invoice changes;
 money on any other invoice becomes an order note; amount and currency are
 checked before `payment_complete()`), and the gateway's currency rules
-(hidden for a currency PawPayments cannot invoice; never re-labelled as USD).
+(hidden for a currency PawPayments cannot invoice; never re-labelled as USD),
+and what the Checkout block integration hands the block.
 
 ```bash
 cd tests

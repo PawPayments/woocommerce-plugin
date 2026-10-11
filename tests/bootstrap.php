@@ -8,6 +8,8 @@
  */
 
 define('ABSPATH', __DIR__ . '/');
+define('PAWPAYMENTS_PLUGIN_URL', 'https://shop.example/wp-content/plugins/pawpayments-for-woocommerce/');
+define('PAWPAYMENTS_VERSION', 'test');
 
 final class WcState
 {
@@ -21,6 +23,9 @@ final class WcState
             'orders' => [],
             'store_currency' => 'USD',
             'notices' => [],
+            'wp_options' => [],      // get_option()
+            'gateways' => [],        // WC()->payment_gateways()->payment_gateways()
+            'scripts' => [],         // wp_register_script() calls
         ];
     }
 }
@@ -61,6 +66,11 @@ class WC_Payment_Gateway
     public function get_return_url($order = null)
     {
         return 'https://shop.example/return';
+    }
+
+    public function supports($feature)
+    {
+        return in_array($feature, $this->supports, true);
     }
 }
 
@@ -103,6 +113,33 @@ function wc_add_notice($message, $type = 'success')
     $GLOBALS['wc']['notices'][] = [$type, $message];
 }
 
+function get_option($name, $default = false)
+{
+    return $GLOBALS['wc']['wp_options'][$name] ?? $default;
+}
+
+function wp_register_script($handle, $src, $deps = [], $ver = false, $in_footer = false)
+{
+    $GLOBALS['wc']['scripts'][$handle] = ['src' => $src, 'deps' => $deps];
+    return true;
+}
+
+/** WC()->payment_gateways()->payment_gateways(), the gateways WooCommerce loaded. */
+function WC()
+{
+    return new class {
+        public function payment_gateways()
+        {
+            return new class {
+                public function payment_gateways()
+                {
+                    return $GLOBALS['wc']['gateways'];
+                }
+            };
+        }
+    };
+}
+
 /** The WC_Order getters the plugin reads. */
 class FakeOrder
 {
@@ -110,13 +147,27 @@ class FakeOrder
     public $meta;
     public $currency;
     public $total;
+    public $paid;
+    public $transactionId;
 
-    public function __construct(string $method = 'pawpayments', array $meta = [], string $currency = 'USD', string $total = '50.00')
+    public function __construct(string $method = 'pawpayments', array $meta = [], string $currency = 'USD', string $total = '50.00', bool $paid = false, string $transactionId = '')
     {
         $this->method = $method;
         $this->meta = $meta;
         $this->currency = $currency;
         $this->total = $total;
+        $this->paid = $paid;
+        $this->transactionId = $transactionId;
+    }
+
+    public function is_paid()
+    {
+        return $this->paid;
+    }
+
+    public function get_transaction_id()
+    {
+        return $this->transactionId;
     }
 
     public function get_payment_method()
@@ -147,3 +198,5 @@ require_once $plugin . '/vendor/pawpayments/sdk/src/PawPaymentsClient.php';
 require_once $plugin . '/vendor/pawpayments/sdk/src/Webhook.php';
 require_once $plugin . '/includes/class-wc-gateway-pawpayments.php';
 require_once $plugin . '/includes/class-wc-pawpayments-webhook.php';
+require_once __DIR__ . '/stubs/blocks.php';
+require_once $plugin . '/includes/class-wc-pawpayments-blocks.php';
